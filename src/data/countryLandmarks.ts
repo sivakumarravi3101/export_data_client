@@ -1,0 +1,20 @@
+// Country -> Wikipedia article whose lead photo is the landmark used as the page backdrop.
+export const LANDMARK_ARTICLES: Record<string, string> = {
+  'australia': 'Sydney Opera House',
+  'canada': 'CN Tower',
+  'china': 'Great Wall of China',
+  'egypt': 'Great Pyramid of Giza',
+  'germany': 'Brandenburg Gate',
+  'japan': 'Mount Fuji',
+  'kuwait': 'Kuwait Towers',
+  'malaysia': 'Petronas Towers',
+  'qatar': 'Doha',
+  'united arab emirates': 'Burj Khalifa',
+  'united kingdom': 'Tower Bridge',
+  'united states': 'Statue of Liberty',
+  'france': 'Eiffel Tower',
+  'singapore': 'Marina Bay Sands',
+  'south africa': 'Table Mountain',
+  'sri lanka': 'Sigiriya',
+  'nepal': 'Mount Everest',
+}

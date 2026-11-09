@@ -1,0 +1,46 @@
+/* Light "liquid glass" theme, scoped to the country details page. Loaded only with that route. */
+.country-page {
+  --lg-ink: #0d1f3c; --lg-muted: #50627f; --lg-accent: #0a63d8;
+  --lg-green: #0a8f5a; --lg-amber: #b86e00; --lg-red: #c23a3a;
+  position: relative; isolation: isolate; min-height: 100svh; color: var(--lg-ink);
+  background: linear-gradient(160deg, #e9f1fc, #f6f9ff);
+}
+.lg-panel {
+  border-radius: 24px; padding: 22px; color: var(--lg-ink);
+  background:
+    radial-gradient(120% 70% at 8% 0%, rgba(255, 255, 255, .55), transparent 55%),
+    linear-gradient(145deg, rgba(255, 255, 255, .74), rgba(255, 255, 255, .54));
+  border: 1px solid rgba(255, 255, 255, .75);
+  box-shadow: 0 12px 38px rgba(18, 38, 75, .15), inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 -1px 0 rgba(255, 255, 255, .3);
+  backdrop-filter: blur(24px) saturate(1.7); -webkit-backdrop-filter: blur(24px) saturate(1.7);
+}
+.lg-card {
+  background: rgba(255, 255, 255, .66); border: 1px solid rgba(255, 255, 255, .8); border-radius: 16px; color: var(--lg-ink);
+  box-shadow: 0 2px 10px rgba(18, 38, 75, .06);
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+}
+.lg-card:hover { transform: translateY(-2px); background: rgba(255, 255, 255, .88); box-shadow: 0 10px 24px rgba(18, 38, 75, .14); }
+.lg-card.on { background: rgba(255, 255, 255, .95); border-color: var(--lg-accent); box-shadow: 0 0 0 2px rgba(10, 99, 216, .18), 0 10px 24px rgba(18, 38, 75, .14); }
+.lg-btn {
+  font: inherit; font-size: .9rem; padding: 9px 16px; border-radius: 999px; color: var(--lg-ink); cursor: pointer; text-decoration: none;
+  background: rgba(255, 255, 255, .72); border: 1px solid rgba(255, 255, 255, .85); box-shadow: 0 2px 8px rgba(18, 38, 75, .08);
+  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.lg-btn:hover:not(:disabled) { transform: translateY(-1px); background: #fff; box-shadow: 0 6px 16px rgba(18, 38, 75, .14); }
+.lg-btn:disabled { opacity: .45; cursor: default; }
+.lg-select {
+  appearance: none; -webkit-appearance: none; font: inherit; font-size: .92rem; color: var(--lg-ink); cursor: pointer;
+  padding: 9px 34px 9px 14px; border-radius: 12px; min-width: 0; max-width: 100%;
+  background: rgba(255, 255, 255, .78) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20'%3E%3Cpath d='M5 7.5l5 5 5-5' fill='none' stroke='%230d1f3c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 11px center;
+  border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 2px 8px rgba(18, 38, 75, .08); transition: box-shadow .15s ease, background-color .15s ease;
+}
+.lg-select:hover:not(:disabled) { background-color: #fff; }
+.lg-select:disabled { opacity: .6; cursor: default; }
+.lg-btn:focus-visible, .lg-select:focus-visible, .lg-card:focus-visible { outline: 2px solid var(--lg-accent); outline-offset: 2px; }
+.lg-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .75rem; background: rgba(10, 99, 216, .1); color: #0a4fb0; }
+.lg-rise { animation: lg-rise .4s ease both; animation-delay: calc(var(--i, 0) * 28ms); }
+@keyframes lg-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.lg-skel { border-radius: 12px; background: linear-gradient(90deg, rgba(255,255,255,.35), rgba(255,255,255,.75), rgba(255,255,255,.35)); background-size: 200% 100%; animation: lg-shimmer 1.4s linear infinite; }
+@keyframes lg-shimmer { to { background-position: -200% 0; } }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .lg-panel { background: rgba(255, 255, 255, .92); } }
+@media (prefers-reduced-motion: reduce) { .lg-rise, .lg-skel { animation: none; } .lg-card, .lg-btn { transition: none; } .lg-card:hover, .lg-btn:hover { transform: none; } }
