@@ -67,7 +67,8 @@ export interface MarketOverview {
  */
 export function pickCountryInsight(demand: ProductDemand): Insight | null {
   const list = demand.insights ?? []
-  if (import.meta.env?.DEV && list.length > 1) console.warn(`[market overview] expected one country insight, received ${list.length}; using the first.`)
+  //uncomment for development
+  //if (import.meta.env?.DEV && list.length > 1) console.warn(`[market overview] expected one country insight, received ${list.length}; using the first.`)
   return list[0] ?? null
 }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import "@/assets/glass.css";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import CountryHero from "@/components/CountryHero.vue";
 import CountryMarketOverview from "@/components/CountryMarketOverview.vue";
@@ -10,24 +10,36 @@ import ProductCategoryFilter from "@/components/ProductCategoryFilter.vue";
 import ProductList from "@/components/ProductList.vue";
 import ProductPagination from "@/components/ProductPagination.vue";
 import { CURRENCIES, type CurrencyCode } from "@/lib/currency";
+import { countryIndexFor } from "@/lib/countryIndex";
+import { buildProductKey, countryPath, parseProductKey, productPath } from "@/lib/slug";
 import { useCountryImage } from "@/composables/useCountryImage";
 import { useCountryProducts } from "@/composables/useCountryProducts";
 import { useCurrency } from "@/composables/useCurrency";
 import { useProductDemand } from "@/composables/useProductDemand";
+import { peekCountries } from "@/services/marketInsightService";
+import { usePageSeo } from "@/seo/usePageSeo";
+import { countryPageLd, productPageLd } from "@/seo/structuredData";
+import { productPageTitle, titleCase, truncate } from "@/seo/text";
+import type { ProductSummary } from "@/models/countryProduct";
 
 const route = useRoute();
 const router = useRouter();
-const countryId = computed(() => Number(route.params.countryId));
-const selectedHs = computed(() => (route.query.hs as string) || null);
+
+// The URL carries a country slug and, on product pages, "<hsCode>-<name>". The router guard has already loaded the country list.
+const countrySlug = computed(() => String(route.params.countrySlug));
+const country = computed(
+  () => countryIndexFor(peekCountries() ?? []).bySlug.get(countrySlug.value) ?? null
+);
+const countryId = computed(() => country.value?.id ?? 0);
+const countryName = computed(() => country.value?.name ?? "Selected country");
+const selectedHs = computed(() =>
+  route.name === "product"
+    ? (parseProductKey(String(route.params.productKey))?.hsCode ?? null)
+    : null
+);
 
 const list = useCountryProducts(countryId);
-const countryName = computed(
-  () =>
-    (route.query.name as string) ||
-    list.dataCountryName.value ||
-    "Selected country"
-);
-const { image, loaded } = useCountryImage(countryName);
+const { image } = useCountryImage(countryName);
 const {
   overview,
   loading: demandLoading,
@@ -35,13 +47,80 @@ const {
 } = useProductDemand(selectedHs, countryId);
 const fx = useCurrency();
 
-const selectProduct = (hs: string) =>
-  router.replace({ query: { ...route.query, hs } });
+const toProduct = (p: ProductSummary) => ({
+  name: "product",
+  params: { countrySlug: countrySlug.value, productKey: buildProductKey(p.hsCode, p.productName) },
+});
+
+// If the slug part of the URL is stale or mistyped, move to the canonical URL (same page, no refetch).
+watch(overview, (o) => {
+  if (!o || route.name !== "product" || o.product.hsCode !== selectedHs.value) return;
+  const key = buildProductKey(o.product.hsCode, o.product.name);
+  if (key !== route.params.productKey) {
+    router.replace({ name: "product", params: { countrySlug: countrySlug.value, productKey: key } });
+  }
+});
+
+const productTitle = computed(() => (overview.value ? titleCase(overview.value.product.name) : null));
+
+usePageSeo(() => {
+  const cName = countryName.value;
+  const cPath = countryPath(countrySlug.value);
+  const o = overview.value;
+  const hs = selectedHs.value;
+
+  if (hs) {
+    if (!o) {
+      return { title: `HS ${hs} exports to ${cName}`, description: `Export market details for HS code ${hs} in ${cName}.`, path: route.path, noindex: true };
+    }
+    const name = productTitle.value!;
+    const path = productPath(countrySlug.value, hs, o.product.name);
+    const m = o.market;
+    const title = productPageTitle(name, cName, hs);
+    const description = m
+      ? truncate(
+          `India's ${name} exports to ${cName}: ${m.trend.signal.replace(/_/g, " ").toLowerCase()} trend, ${m.marketSharePct}% market share, growth ${m.trend.growthRate}. HS code ${hs}. Source: ${o.source.split(" (")[0]}.`
+        )
+      : truncate(`Export market details for ${name} (HS ${hs}) in ${cName}.`);
+    return {
+      title,
+      description,
+      path,
+      noindex: !m, // no country-specific data => thin page, keep it out of the index
+      jsonLd: m
+        ? productPageLd({ countryName: cName, countryPath: cPath, path, productName: name, hsCode: hs, description, source: o.source, history: o.productHistory })
+        : undefined,
+    };
+  }
+
+  const products = list.products.value.map((p) => ({
+    name: titleCase(p.productName),
+    path: productPath(countrySlug.value, p.hsCode, p.productName),
+  }));
+  const description = `Explore the products India exports to ${cName}: HS codes, categories, market demand, prices and historical export trends from APEDA statistics.`;
+  return {
+    title: `India Exports to ${cName}: Products & Demand`,
+    description,
+    path: cPath,
+    noindex: !country.value || (!list.loading.value && products.length === 0),
+    jsonLd: countryPageLd({ countryName: cName, path: cPath, description, products }),
+  };
+});
 </script>
 
 <template>
-  <main class="country-page">
-    <CountryHero :country-name="countryName" :image="image" :loaded="loaded" />
+  <main v-if="!country" class="country-page">
+    <p class="lg-panel" style="margin: 40px auto; max-width: 480px">
+      We couldn't load this country right now. Please reload the page.
+    </p>
+  </main>
+  <main v-else class="country-page">
+    <CountryHero
+      :country-name="countryName"
+      :image="image"
+      :product-name="productTitle"
+      :hs-code="selectedHs"
+    />
 
     <div class="content">
       <CountryMarketOverview
@@ -82,7 +161,7 @@ const selectProduct = (hs: string) =>
           :error="list.error.value"
           :selected-hs="selectedHs"
           :filtered="list.categoryId.value !== null"
-          @select="selectProduct"
+          :to-product="toProduct"
           @retry="list.reload"
         />
         <ProductPagination

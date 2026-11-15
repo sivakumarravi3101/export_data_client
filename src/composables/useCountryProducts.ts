@@ -1,5 +1,6 @@
-import { computed, ref, watch, type Ref } from 'vue'
-import { getCategories, getProductsByCountry } from '@/services/marketInsightService'
+import { computed, inject, ref, watch, type Ref } from 'vue'
+import { getCategories, getProductsByCountry, peekCategories } from '@/services/marketInsightService'
+import { PRELOAD_KEY } from '@/ssr/preload'
 import { summarizeProducts } from '@/lib/productSummary'
 import type { Category } from '@/models/category'
 import type { CountryProduct } from '@/models/countryProduct'
@@ -20,10 +21,18 @@ export function useCountryProducts(countryId: Ref<number>) {
   const error = ref<string | null>(null)
   let seq = 0 // ignore responses from superseded requests
 
+  // Prerendered pages arrive with page 1 already loaded: start from it instead of fetching again.
+  const pre = inject(PRELOAD_KEY, null)?.countryProducts
+  let seed = pre && pre.countryId === countryId.value ? pre : null
+  if (seed) { hasNext.value = seed.rows.length > pageSize.value; rows.value = seed.rows.slice(0, pageSize.value) }
+  const cachedCategories = peekCategories()
+  if (cachedCategories) { categories.value = cachedCategories; categoriesLoading.value = false }
+
   const products = computed(() => summarizeProducts(rows.value))
   const dataCountryName = computed(() => rows.value[0]?.countryName ?? null)
 
   async function load() {
+    if (!countryId.value) { loading.value = false; return }
     const mine = ++seq
     loading.value = true; error.value = null
     try {
@@ -58,8 +67,12 @@ export function useCountryProducts(countryId: Ref<number>) {
   function setPageSize(n: number) { pageSize.value = n; page.value = 1; return load() }
 
   // Single trigger for the first load and for navigating between countries; resets filters.
-  watch(countryId, () => { categoryId.value = null; page.value = 1; void load() }, { immediate: true })
-  void loadCategories()
+  watch(countryId, () => {
+    categoryId.value = null; page.value = 1
+    if (seed) { seed = null; return }
+    void load()
+  }, { immediate: true })
+  if (!cachedCategories) void loadCategories()
 
   return { categories, categoriesLoading, categoriesError, categoryId, page, pageSize, products, dataCountryName, hasNext, loading, error, setCategory, setPage, setPageSize, reload: load, reloadCategories: loadCategories }
 }

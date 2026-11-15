@@ -6,7 +6,9 @@ import type { LandmarkImage } from "@/services/countryImageService";
 const props = defineProps<{
   countryName: string;
   image: LandmarkImage | null;
-  loaded: boolean;
+  /** Set on product pages: the product becomes the page's H1. */
+  productName?: string | null;
+  hsCode?: string | null;
 }>();
 const NEEDS_THE = [
   "united states",
@@ -25,27 +27,24 @@ const placeName = computed(() =>
   <div class="backdrop" aria-hidden="true">
     <div
       class="photo"
-      :class="{ on: loaded }"
+      :class="{ on: !!image }"
       :style="image ? { backgroundImage: `url(${image.url})` } : undefined"
     />
     <div class="veil" />
   </div>
   <header class="hero">
     <RouterLink to="/" class="lg-btn back">Back to globe</RouterLink>
-    <h1>Explore {{ countryName }}</h1>
-    <p>
+    <h1 v-if="productName">{{ productName }} exports to {{ countryName }}</h1>
+    <h1 v-else>Explore {{ countryName }}</h1>
+    <p v-if="productName">
+      Market demand, prices and export history for HS code {{ hsCode }} in
+      {{ placeName }}.
+    </p>
+    <p v-else>
       Discover India's export opportunities and product demand in
       {{ placeName }}.
     </p>
   </header>
-  <a
-    v-if="image && loaded"
-    class="credit"
-    :href="image.pageUrl"
-    target="_blank"
-    rel="noopener"
-    >Photo: {{ image.title }}, Wikipedia</a
-  >
 </template>
 
 <style scoped>
@@ -99,21 +98,6 @@ p {
   font-size: clamp(1rem, 1.6vw, 1.2rem);
   line-height: 1.5;
   color: var(--lg-muted);
-}
-.credit {
-  position: fixed;
-  right: 10px;
-  bottom: 8px;
-  z-index: 5;
-  font-size: 0.7rem;
-  padding: 3px 9px;
-  border-radius: 999px;
-  color: var(--lg-muted);
-  background: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
-}
-.credit:hover {
-  color: var(--lg-ink);
 }
 @media (max-width: 700px) {
   .photo {

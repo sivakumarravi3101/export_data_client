@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import DestinationSelect from "@/components/DestinationSelect.vue";
 import { GlobeScene } from "@/three/GlobeScene";
 import { getCountryCoordinates } from "@/data/countryCoordinates";
-import { getCountries } from "@/services/marketInsightService";
+import { getCountries, peekCountries } from "@/services/marketInsightService";
+import { countryIndexFor } from "@/lib/countryIndex";
+import { usePageSeo } from "@/seo/usePageSeo";
+import { websiteLd } from "@/seo/structuredData";
 import type { Country } from "@/models/country";
 
 const router = useRouter();
 const host = ref<HTMLElement>();
-const countries = ref<Country[]>([]);
-const loading = ref(true);
+// Prerendered pages arrive with the country list already loaded (so the destination links exist in the HTML).
+const countries = ref<Country[]>(peekCountries() ?? []);
+const loading = ref(countries.value.length === 0);
 const error = ref<string | null>(null);
 const webglError = ref(false);
 const selectedId = ref<number | null>(null);
@@ -26,7 +30,8 @@ function syncMarkers() {
     countries.value.flatMap((c) => {
       const coords = getCountryCoordinates(c.name);
       if (!coords) {
-        console.warn(`[Globe] no coordinates mapped for "${c.name}"`);
+        //uncomment for development
+        // console.warn(`[Globe] no coordinates mapped for "${c.name}"`);
         return [];
       }
       return [{ id: c.id, name: c.name, coords }];
@@ -47,13 +52,27 @@ async function loadCountries() {
   }
 }
 
+const destinations = computed(() => {
+  const { slugById } = countryIndexFor(countries.value);
+  return countries.value.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: slugById.get(c.id)!,
+  }));
+});
+
 function openCountry(c: Country) {
-  return router.push({
-    name: "country",
-    params: { countryId: c.id },
-    query: { name: c.name },
-  });
+  const slug = countryIndexFor(countries.value).slugById.get(c.id)!;
+  return router.push({ name: "country", params: { countrySlug: slug } });
 }
+
+usePageSeo(() => ({
+  title: "India Export Products & Market Demand by Country",
+  description:
+    "Explore India's export opportunities by destination. Discover country-wise export products, market demand, prices and historical export trends.",
+  path: "/",
+  jsonLd: [websiteLd()],
+}));
 
 async function onSelect(id: number) {
   const c = countries.value.find((x) => x.id === id);
@@ -78,7 +97,12 @@ onMounted(() => {
     console.error(e);
     webglError.value = true;
   }
-  void loadCountries();
+  if (countries.value.length) {
+    syncMarkers();
+    loading.value = false;
+  } else {
+    void loadCountries();
+  }
 });
 onBeforeUnmount(() => {
   globe?.dispose();

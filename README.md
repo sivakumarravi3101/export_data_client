@@ -40,3 +40,7 @@ npm run dev
 ```sh
 npm run build
 ```
+
+## SEO & deployment
+
+See [SEO.md](./SEO.md) for the rendering strategy, URL scheme, build variables, hosting requirements and the Google Search Console runbook.

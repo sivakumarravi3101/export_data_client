@@ -1,14 +1,22 @@
-import { computed, ref, watch, type Ref } from 'vue'
+import { computed, inject, ref, watch, type Ref } from 'vue'
 import { getExportProductByHsncode } from '@/services/exportDemandService' // <- adjust to where your existing function lives
 import { buildMarketOverview } from '@/lib/marketOverview'
 import type { ProductDemand } from '@/models/exportDemandProduct'
+import { PRELOAD_KEY } from '@/ssr/preload'
 
 export function useProductDemand(hsCode: Ref<string | null>, countryId: Ref<number>) {
   const demand = ref<ProductDemand | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  let seed = inject(PRELOAD_KEY, null)?.demand ?? null // prerendered pages already carry this response
+
   watch([hsCode, countryId], async ([hs, id]) => {
+    if (seed && seed.hsCode === hs && seed.countryId === id) {
+      demand.value = seed.data; error.value = null; loading.value = false; seed = null
+      return
+    }
+    seed = null
     demand.value = null; error.value = null
     if (!hs) { loading.value = false; return }
     loading.value = true

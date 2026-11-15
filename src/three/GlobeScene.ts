@@ -142,7 +142,8 @@ export class GlobeScene {
       const mat = this.own(new THREE.PointsMaterial({ color: 0x5ad1ff, size: 0.011, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending }))
       this.globe.add(new THREE.Points(geo, mat))
     } catch (e) {
-      console.warn("[GlobeScene] land dots unavailable:", e)
+      //uncomment for development
+      // console.warn("[GlobeScene] land dots unavailable:", e)
     }
   }
 
