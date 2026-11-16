@@ -22,9 +22,18 @@ class Client {
         )
     }
 
-    get(url: any, errorHandler = {}) {
+
+    get(url: any, requestConfig: any = {}, errorHandler = {}) {
         this.errorHandler = errorHandler
-        return this.client.get(url)
+
+        return this.client.get(url, {
+            ...requestConfig,
+            headers: {
+                'Content-Type': 'application/json',
+                ...requestConfig.headers,
+            },
+        })
     }
+
 }
 export default new Client()

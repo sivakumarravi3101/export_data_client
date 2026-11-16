@@ -124,7 +124,7 @@ for (const c of countries) {
   let countryLastmod
   const seen = new Set()
   for (let skip = 0, guard = 0; guard < 5000; guard++) {
-    const res = await retry(() => app.getProductsByCountry(c.id, { top: ROWS_PAGE, skip, API_TOKEN }), `products ${c.name} @${skip}`)
+    const res = await retry(() => app.getProductsByCountry(c.id, { top: ROWS_PAGE, skip },API_TOKEN), `products ${c.name} @${skip}`)
     const items = res.items ?? []
     if (!items.length) break
     if (items.every((r) => seen.has(r.id))) { 
