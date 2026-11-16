@@ -29,7 +29,10 @@ const MAX_PRODUCTS = Number(env.PRERENDER_MAX_PRODUCTS ?? 0)
 const MAX_FAIL = Number(env.PRERENDER_MAX_FAIL ?? 0.02)
 const SEED_ROWS = 51 // must equal the app's first request: pageSize (50) + 1
 const SITEMAP_LIMIT = 45000 // protocol max is 50,000 URLs per file
-
+const API_TOKEN = env.PRERENDER_API_TOKEN
+if (!API_TOKEN) {
+  die('PRERENDER_API_TOKEN is missing. Check your Vercel environment variables.')
+}
 const dist = path.join(root, 'dist')
 const die = (msg) => { console.error(`\n[prerender] ERROR: ${msg}\n`); process.exit(1) }
 if (!/^https?:\/\/[^/]+/.test(SITE_URL)) die('VITE_SITE_URL is missing or invalid (e.g. https://www.example.com). It is needed for canonical URLs and the sitemap.')
@@ -121,7 +124,7 @@ for (const c of countries) {
   let countryLastmod
   const seen = new Set()
   for (let skip = 0, guard = 0; guard < 5000; guard++) {
-    const res = await retry(() => app.getProductsByCountry(c.id, { top: ROWS_PAGE, skip }), `products ${c.name} @${skip}`)
+    const res = await retry(() => app.getProductsByCountry(c.id, { top: ROWS_PAGE, skip, API_TOKEN }), `products ${c.name} @${skip}`)
     const items = res.items ?? []
     if (!items.length) break
     if (items.every((r) => seen.has(r.id))) { 
@@ -158,7 +161,7 @@ for (const c of countries) {
     const url = `${countryUrl}/product/${app.buildProductKey(hs, p.name)}`
     try {
       let data
-      try { data = await retry(() => app.getExportProductByHsncode(hs, c.id), `demand ${hs}/${c.name}`) }
+      try { data = await retry(() => app.getExportProductByHsncode(hs, c.id, API_TOKEN), `demand ${hs}/${c.name}`) }
       catch (e) {
   const message = String(e?.message ?? e)
 

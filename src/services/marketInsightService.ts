@@ -34,10 +34,17 @@ export interface ProductQuery {
 export async function getProductsByCountry(
   countryId: number,
   { categoryId = null, top = 50, skip = 0 }: ProductQuery = {},
+  prerenderToken?: string,
 ): Promise<CountryProductsResponse> {
   const clauses = [`countryId eq ${countryId}`]
   if (categoryId !== null) clauses.push(`categoryId eq ${categoryId}`)
   const filter = encodeURIComponent(clauses.join(' and '))
-  const response = await client.get(`/products?$filter=${filter}&$top=${top}&$skip=${skip}`)
+  const response = await client.get(`/products?$filter=${filter}&$top=${top}&$skip=${skip}`,
+    {
+      headers: prerenderToken
+        ? { 'X-Prerender-Token': prerenderToken }
+        : {},
+    },
+  )
   return response.data as CountryProductsResponse
 }
